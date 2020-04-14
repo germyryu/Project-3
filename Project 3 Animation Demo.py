@@ -1,11 +1,3 @@
-#################################################################
-# Hw11
-# Your Name: Jeremy Ryu
-# Your Andrew ID: jihoonr
-# Your Section: N
-# Collaborators: stavares
-#################################################################
-
 import random, math
 
 #### OOP Classes ####

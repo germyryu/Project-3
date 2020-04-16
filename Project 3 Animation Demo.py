@@ -58,6 +58,7 @@ class Boat(object):
         self.cx += dx
 
 ## Background Class ##
+##TODO: add more images for background
 class Background(object):
     # Model
     def __init__(self, cx, cy):
@@ -76,13 +77,11 @@ class Background(object):
 from tkinter import *
 
 def init(data):
-    data.river = River(data.width//2, data.height//2)
-    data.boat = Boat()
-    data.background = Background()
+    data.river = River(data.width//2, data.height//2, data.width, data.height//6)
+    data.boat = Boat(data.width//2, dataa.height//2 - 20)
+    data.background = Background(0, 0)
     #used to keep track of time
     data.step=0
-    data.score = 0
-    # TODO: add code here
 
 def mousePressed(event, data):
     pass
@@ -92,93 +91,31 @@ def keyPressed(event, data):
         data.rocket.rotate(-5)
     elif event.keysym == "Left":
         data.rocket.rotate(5)
-    #append the instance of bullet to the bullet list
-    elif event.keysym=="space":
-        data.bullet.append(data.rocket.makeBullet())
-    # TODO: add code here
 
 def timerFired(data):
     data.step+=1
-    # TODO: add code here
-    #takes care of the movement of the bullets on and off the screen
-    for missile in data.bullet:
-        missile.moveBullet()
-        if missile.isOffscreen(data.width,data.height):
-            data.bullet.remove(missile)
-    #initializes the parameters of the asteroids in a random manner
-    data.r=random.randint(20,100)
-    data.cx=random.randint(0+data.r,data.width-data.r)
-    data.cy=random.randint(0+data.r,data.height-data.r)
-    data.speed=random.randint(5,20)
-    #list of 4 directions that are described in a conditional statement below
-    data.direction=random.choice(["left","right","up","down"])
+    #takes care of the movement of the boat on the screen
+    data.boat.move(5)
+    #initializes the speed and direction of the river in a random manner
+    data.speed=random.randint(5,15)
+    data.direction=random.choice(['right', 'left'])
     if data.direction=="left":
         data.direction=[-1,0]
     elif data.direction=="right":
         data.direction=[1,0]
-    elif data.direction=="up":
-        data.direction=[0,-1]
-    else:
-        data.direction=[0,1]
+        
+    data.river.speed = data.speed
+    data.river.direction = data.direction
     
-    #this list takes care of randomizing the type of asteroid that is called
-    #every 2 seconds
-    randL=[Asteroid(data.cx,data.cy,data.r,data.speed,data.direction),\
-    ShrinkingAsteroid(data.cx,data.cy,data.r,data.speed,data.direction),\
-    SplittingAsteroid(data.cx,data.cy,data.r,data.speed,data.direction)]
-    
-    if data.step%20==0:
-        data.asteroids.append(random.choice(randL))
-
-    for rock in data.asteroids:
-        rock.moveAsteroid()
-        if rock.collidesWithWall(data.width,data.height):
-            rock.reactToWallHit(data.width,data.height)
-    #every 10 seconds, any asteroid that is stunned should be removed from the
-    #asteroids list, hence the screen  
-    if data.step%100==0:
-        for rock in data.asteroids:
-            if rock.speed==0:
-                data.asteroids.remove(rock)
-                data.score+=1
-    
-    #loop through the bullets and asteroids and display the given results when
-    #a bullet hits an asteroid
-    for rock in data.asteroids:
-        for missile in data.bullet:
-            if missile.collidesWithAsteroid(rock):
-                data.bullet.remove(missile)
-                rock.reactToBulletHit()
-                #checks if radius is less than or equal to 15
-                if isinstance(rock,ShrinkingAsteroid):
-                    if rock.r<=15:
-                        try:
-                            data.asteroids.remove(rock)
-                            data.score+=1
-                        except:
-                            pass
-                #checks if it is possible to split the asteroid into more
-                #asteroids
-                if isinstance(rock,SplittingAsteroid):
-                    try:
-                        data.asteroids.remove(rock)
-                        data.score+=1
-                    except:
-                        pass
-                    for i in rock.reactToBulletHit():
-                        if i.r>0:
-                            data.asteroids.append(i)
+    #checks if the boat comes in contact with the desired location
+    if data.boat.collision:
+        ##TODO: IMPLEMENTATION NEEDED
                             
 def redrawAll(canvas, data):
     canvas.create_rectangle(0, 0, data.width, data.height, fill="gray3")
-    data.rocket.draw(canvas)
-    for missile in data.bullet:
-        missile.draw(canvas)
-    for rock in data.asteroids:
-        rock.draw(canvas)
-    # TODO: add code here
-    canvas.create_text(data.width/2, data.height, anchor="s", fill="yellow",
-                       font="Arial 24 bold", text="Score: " + str(data.score))
+    data.river.draw(canvas)
+    data.boat.draw(canvas)
+    data.background.draw(canvas)
 
 #################################################################
 # use the run function as-is

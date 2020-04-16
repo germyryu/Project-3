@@ -3,7 +3,7 @@ import random, math
 #### OOP Classes ####
 
 ## Classes we need to create are:
-## River, Boat, Asteroid, and Background ##
+## River, Boat, and Background ##
 
 ## River class ##
 class River(object):
@@ -24,20 +24,19 @@ class River(object):
                            self.cx + self.length/2, self.cy + self.width/2,
                            fill=color)
  
-## Rocket class ##
-
-class Rocket(object):
+## Boat class ##
+class Boat(object):
     # Model
     def __init__(self, cx, cy):
-        # A rocket has a position and a current angle it faces
+        # A boat has a position and a current angle it faces with respect to the river
         self.cx = cx
         self.cy = cy
         self.angle = 90
 
     # View
     def draw(self, canvas):
-        # Draws a cool-looking triangle-ish shape
-        size = 30
+        # Treat the boat as a triangle for now
+        size = 10
         angle = math.radians(self.angle)
         angleChange = 2*math.pi/3
         numPoints = 3
@@ -47,66 +46,39 @@ class Rocket(object):
                            self.cy - size*math.sin(angle + point*angleChange)))
         points.insert(numPoints-1, (self.cx, self.cy))
         
-        canvas.create_polygon(points, fill="green2")
+        canvas.create_polygon(points, fill="brown4")
 
     # Controller
+    # Rotate the boat so that the user can aim the boat in a certain direction
     def rotate(self, numDegrees):
         self.angle += numDegrees
+    
+    # Move the boat along the river
+    def move(self, dx):
+        self.cx += dx
 
-    def makeBullet(self):
-        # Generates a bullet heading in the direction the ship is facing
-        offset = 35
-        x = self.cx + offset*math.cos(math.radians(self.angle)) 
-        y = self.cy - offset*math.sin(math.radians(self.angle))
-        speedLow, speedHigh = 20, 40
-
-        return Bullet(x, y, self.angle, random.randint(speedLow, speedHigh))
-
-## Bullet Class ##
-
-class Bullet(object):
+## Background Class ##
+class Background(object):
     # Model
-    def __init__(self, cx, cy, angle, speed):
+    def __init__(self, cx, cy):
         # A bullet has a position, a size, a direction, and a speed
         self.cx = cx
         self.cy = cy
-        self.r = 5
-        self.angle = angle
-        self.speed = speed
     
     # View
     def draw(self, canvas):
-        canvas.create_oval(self.cx - self.r, self.cy - self.r, 
-                           self.cx + self.r, self.cy + self.r,
-                           fill="white", outline=None)
-
-    # Controller
-    def moveBullet(self):
-        # Move according to the original trajectory
-        self.cx += math.cos(math.radians(self.angle))*self.speed
-        self.cy -= math.sin(math.radians(self.angle))*self.speed
-
-    def collidesWithAsteroid(self, other):
-        # Check if the bullet and asteroid overlap at all
-        if(not isinstance(other, Asteroid)): # Other must be an Asteroid
-            return False
-        else:
-            dist = ((other.cx - self.cx)**2 + (other.cy - self.cy)**2)**0.5
-            return dist < self.r + other.r
-    
-    def isOffscreen(self, width, height):
-        # Check if the bullet has moved fully offscreen
-        return (self.cx + self.r <= 0 or self.cx - self.r >= width) or \
-               (self.cy + self.r <= 0 or self.cy - self.r >= height)
+        canvas.create_rectangle(0, 0, 
+                           300, 300,
+                           fill="green", outline=None)
 
 #### Graphics Functions ####
 
 from tkinter import *
 
 def init(data):
-    data.rocket = Rocket(data.width//2, data.height//2)
-    data.bullet=[]
-    data.asteroids=[]
+    data.river = River(data.width//2, data.height//2)
+    data.boat = Boat()
+    data.background = Background()
     #used to keep track of time
     data.step=0
     data.score = 0

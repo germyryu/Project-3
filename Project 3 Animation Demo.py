@@ -2,85 +2,28 @@ import random, math
 
 #### OOP Classes ####
 
-## Asteroid and its subclasses, ShrinkingAsteroid and SplittingAsteroid ##
+## Classes we need to create are:
+## River, Boat, Asteroid, and Background ##
 
-class Asteroid(object):
+## River class ##
+class River(object):
     # Model
-    def __init__(self, cx, cy, r, speed, direction):
+    def __init__(self, cx, cy, length, width, speed, direction):
+        # A river has a position, length, width, speed, and direction
         # An asteroid has a position, size, speed, and direction
         self.cx = cx
         self.cy = cy
-        self.r = r
+        self.length = length
+        self.width = width
         self.speed = speed
         self.direction = direction
 
     # View
-    def draw(self, canvas, color="purple"):
-        canvas.create_oval(self.cx - self.r, self.cy - self.r,
-                           self.cx + self.r, self.cy + self.r,
+    def draw(self, canvas, color="blue"):
+        canvas.create_rectangle(self.cx - self.length/2, self.cy - self.width/2,
+                           self.cx + self.length/2, self.cy + self.width/2,
                            fill=color)
-    
-    # Controller
-    def moveAsteroid(self):
-        self.cx += self.speed * self.direction[0]
-        self.cy += self.speed * self.direction[1]
-    
-    def collidesWithWall(self, width, height):
-        # Check if the asteroid hits the wall or overlaps it at all
-        return self.cx - self.r <= 0 or self.cx + self.r >= width or \
-            self.cy - self.r <= 0 or self.cy + self.r >= height
-    
-    #this function checks makes sure the normal asteroid wraps around
-    def reactToWallHit(self, screenWidth, screenHeight):
-        if self.cx-self.r<0:
-            self.cx=screenWidth-self.r
-        elif self.cx+self.r>screenWidth:
-            self.cx=self.r
-        elif self.cy-self.r<0:
-            self.cy=screenHeight-self.r
-        elif self.cy+self.r>screenHeight:
-            self.cy=self.r
-    
-    #this function stuns the normal asteroid when hit by a bullet
-    def reactToBulletHit(self):
-        self.speed=0
-
-class ShrinkingAsteroid(Asteroid):
-    # Model
-    def __init__(self, cx, cy, r, speed, direction):
-        # Shrinking Asteroids also track how fast they shrink
-        super().__init__(cx, cy, r, speed, direction)
-        self.shrinkAmount = 5
-    
-    # View
-    def draw(self, canvas):
-        super().draw(canvas, color="pink")
-    
-    # Controller
-    #this function makes sure the shrinking asteroid bounces inside the screen
-    def reactToWallHit(self, screenWidth, screenHeight):
-        self.speed=-1*self.speed
-    
-    #this function makes sure the shrinking asteroid shrinks
-    def reactToBulletHit(self):
-        self.r-=self.shrinkAmount
-
-class SplittingAsteroid(Asteroid):  
-    # View
-    def draw(self, canvas):
-        super().draw(canvas, color="blue")
-    
-    # Controller
-    #this function returns a list of the two asteroids that result from
-    #splitting one asteroid
-    def reactToBulletHit(self):
-        asteroid1=SplittingAsteroid(self.cx-self.r,self.cy-self.r,self.r//2,\
-        self.speed,self.direction)
-        asteroid2=SplittingAsteroid(self.cx+self.r,self.cy+self.r,self.r//2,\
-        self.speed,self.direction)
-        return [asteroid1,asteroid2]
-    
-
+ 
 ## Rocket class ##
 
 class Rocket(object):

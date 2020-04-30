@@ -27,11 +27,11 @@ class River(object):
 ## Boat class ##
 class Boat(object):
     # Model
-    def __init__(self, cx, cy):
+    def __init__(self, cx, cy, angle=90):
         # A boat has a position and a current angle it faces with respect to the river
         self.cx = cx
         self.cy = cy
-        self.angle = 90
+        self.angle = angle
 
     # View
     def draw(self, canvas):
@@ -62,22 +62,23 @@ class Boat(object):
 class Background(object):
     # Model
     def __init__(self, cx, cy):
-        # A bullet has a position, a size, a direction, and a speed
         self.cx = cx
         self.cy = cy
     
     # View
-    def draw(self, canvas):
-        canvas.create_rectangle(0, 0, 
-                           300, 300,
+    def draw(self, canvas, data):
+        canvas.create_rectangle(0, 0, data.width, data.height,
                            fill="green", outline=None)
+
+    def drawGoal(self, canvas, data):
+
 
 #### Graphics Functions ####
 
 from tkinter import *
 
 def init(data):
-    data.river = River(data.width//2, data.height//2, data.width, data.height//6)
+    data.river = River(data.width//2, data.height//2, data.width, data.height//6, 1, "E")
     data.boat = Boat(data.width//2, data.height//2 - 20)
     data.background = Background(0, 0)
     #used to keep track of time
@@ -114,9 +115,10 @@ def timerFired(data):
 
 def redrawAll(canvas, data):
     canvas.create_rectangle(0, 0, data.width, data.height, fill="gray3")
+    data.background.draw(canvas, data)
     data.river.draw(canvas)
     data.boat.draw(canvas)
-    data.background.draw(canvas)
+    
 
 #################################################################
 # use the run function as-is

@@ -1,4 +1,5 @@
-import random, math
+import random
+import math
 
 #### OOP Classes ####
 
@@ -10,13 +11,36 @@ class River(object):
     # Model
     def __init__(self, cx, cy, length, width, speed, direction):
         # A river has a position, length, width, speed, and direction
-        # An asteroid has a position, size, speed, and direction
+        # Direction is defined as an angle from the positive x-axis
         self.cx = cx
         self.cy = cy
         self.length = length
         self.width = width
         self.speed = speed
         self.direction = direction
+        self.angle = self.getAngle()
+
+    def getAngle(self):
+        # get an angle based off of the direction
+        if self.direction == 'N':
+            self.angle = math.pi/2
+        elif self.direction == 'W':
+            self.angle = math.pi
+        elif self.direction == 'E':
+            self.angle = 0
+        elif self.direction == 'NE':
+            self.angle = math.pi/4
+        elif self.direction == 'NW':
+            self.angle = 3*math.pi/4
+        elif self.direction == 'S':
+            self.angle = -math.pi/2
+        elif self.direction == 'SE':
+            self.angle = -math.pi/4
+        elif self.direction == 'SW':
+            self.angle = -3*math.pi/4
+        else:
+        # no direction
+            self.angle = None 
 
     # View
     def draw(self, canvas, color="blue"):
@@ -32,6 +56,7 @@ class Boat(object):
         self.cx = cx
         self.cy = cy
         self.angle = angle
+        self.speed = 5
 
     # View
     def draw(self, canvas):
@@ -54,8 +79,11 @@ class Boat(object):
         self.angle += numDegrees
     
     # Move the boat along the river
-    def move(self, dx):
+    def move(self, dx, dy):
         self.cx += dx
+        self.cy += dy
+        
+        
 
 ## Background Class ##
 ##TODO: add more images for background
@@ -71,17 +99,24 @@ class Background(object):
                            fill="green", outline=None)
 
     def drawGoal(self, canvas, data):
-
+        return
 
 #### Graphics Functions ####
 
 from tkinter import *
 
 def init(data):
-    data.river = River(data.width//2, data.height//2, data.width, data.height//6, 1, "E")
-    data.boat = Boat(data.width//2, data.height//2 - 20)
+    # initalize the rivers, this way multiple rivers can be used
+    data.rivers = []
+    for i in range(1):
+        speed = random.randint(1,5)
+        direction = random.choice(['N', 'W', 'E', 'S', 'NW', 'NE', 'SE', 'SW'])
+        r1 = River(data.width//2, data.height//2, data.width, data.height//6, speed, direction)
+        data.rivers.append(r1)
+
+    data.boat = Boat(0, data.height//2 - 20)
     data.background = Background(0, 0)
-    #used to keep track of time
+    # used to keep track of time
     data.step=0
 
 def mousePressed(event, data):
@@ -89,24 +124,15 @@ def mousePressed(event, data):
 
 def keyPressed(event, data):
     if event.keysym == "Right":
-        data.rocket.rotate(-5)
+        data.rotateocket.rotate(-5)
     elif event.keysym == "Left":
         data.rocket.rotate(5)
 
 def timerFired(data):
     data.step+=1
     #takes care of the movement of the boat on the screen
-    data.boat.move(5)
-    #initializes the speed and direction of the river in a random manner
-    data.speed=random.randint(5,15)
-    data.direction=random.choice(['right', 'left'])
-    if data.direction=="left":
-        data.direction=[-1,0]
-    elif data.direction=="right":
-        data.direction=[1,0]
-        
-    data.river.speed = data.speed
-    data.river.direction = data.direction
+    data.boat.move(5, 0)
+    
     
     #checks if the boat comes in contact with the desired location
     #if data.boat.collision:
@@ -116,7 +142,8 @@ def timerFired(data):
 def redrawAll(canvas, data):
     canvas.create_rectangle(0, 0, data.width, data.height, fill="gray3")
     data.background.draw(canvas, data)
-    data.river.draw(canvas)
+    for r in data.rivers:
+        r.draw(canvas)
     data.boat.draw(canvas)
     
 

@@ -18,35 +18,33 @@ class River(object):
         self.width = width
         self.speed = speed
         self.direction = direction
-        self.angle = self.getAngle()
+        self.angle = None
 
     def getAngle(self):
         # get an angle based off of the direction
-        if self.direction == 'N':
-            self.angle = math.pi/2
-        elif self.direction == 'W':
+        if self.direction == 'W':
             self.angle = math.pi
         elif self.direction == 'E':
             self.angle = 0
         elif self.direction == 'NE':
-            self.angle = math.pi/4
+            self.angle = math.pi/6
         elif self.direction == 'NW':
-            self.angle = 3*math.pi/4
-        elif self.direction == 'S':
-            self.angle = -math.pi/2
+            self.angle = 5*math.pi/6
         elif self.direction == 'SE':
-            self.angle = -math.pi/4
+            self.angle = -math.pi/6
         elif self.direction == 'SW':
-            self.angle = -3*math.pi/4
+            self.angle = -5*math.pi/6
         else:
         # no direction
-            self.angle = None 
+            self.angle = None
+        return self.angle 
 
     # View
     def draw(self, canvas, color="blue"):
         canvas.create_rectangle(self.cx - self.length/2, self.cy - self.width/2,
                            self.cx + self.length/2, self.cy + self.width/2,
                            fill=color)
+        canvas.create_text(9*self.length//10, self.cy-self.width//3, text=self.direction)
  
 ## Boat class ##
 class Boat(object):
@@ -56,7 +54,7 @@ class Boat(object):
         self.cx = cx
         self.cy = cy
         self.angle = angle
-        self.speed = 5
+        self.speed = 10
 
     # View
     def draw(self, canvas):
@@ -76,12 +74,14 @@ class Boat(object):
     # Controller
     # Rotate the boat so that the user can aim the boat in a certain direction
     def rotate(self, numDegrees):
-        self.angle += numDegrees
+        newAngle = self.angle + numDegrees
+        if (newAngle < 180 and newAngle > 0):
+            self.angle = newAngle
     
     # Move the boat along the river
     def move(self, dx, dy):
         self.cx += dx
-        self.cy += dy
+        self.cy -= dy
         
         
 
@@ -108,43 +108,96 @@ from tkinter import *
 def init(data):
     # initalize the rivers, this way multiple rivers can be used
     data.rivers = []
-    for i in range(1):
+    for i in range(4):
         speed = random.randint(1,5)
-        direction = random.choice(['N', 'W', 'E', 'S', 'NW', 'NE', 'SE', 'SW'])
-        r1 = River(data.width//2, data.height//2, data.width, data.height//6, speed, direction)
-        data.rivers.append(r1)
+        direction = random.choice(['W', 'E', 'NW', 'NE', 'SE', 'SW'])
+        cx = data.width//2
+        cy = data.height - 70 - 130 * i
 
-    data.boat = Boat(0, data.height//2 - 20)
+        r = River(cx, cy, data.width, data.height//6, speed, direction)
+        data.rivers.append(r)
+
+    data.boat = Boat(data.width//2, data.height - 10)
     data.background = Background(0, 0)
     # used to keep track of time
     data.step=0
+    data.startSeconds = 15
+    # used to keep track of game state
+    # 0: start, 1: channel, 2: game, 3: end
+    data.state=1
+    # current river
+    data.curr=0
 
 def mousePressed(event, data):
     pass
 
 def keyPressed(event, data):
-    if event.keysym == "Right":
-        data.rotateocket.rotate(-5)
-    elif event.keysym == "Left":
-        data.rocket.rotate(5)
+    k = event.keysym
+
+    if data.state == 1:
+        if k == 's':
+            data.state += 1
+        elif k == 'Space':
+            data.state += 1
+        elif k == 'q':
+            data.state -= 1
+
+    if data.state == 2:
+        if k == "Right":
+            data.boat.rotate(-10)
+        elif k == "Left":
+            data.boat.rotate(10)
 
 def timerFired(data):
     data.step+=1
-    #takes care of the movement of the boat on the screen
-    data.boat.move(5, 0)
+    
+    if data.state == 1:
+        if data.step % 4 == 0:
+            data.startSeconds -= 1
+            if data.startSeconds == 0:
+                data.state += 1
+
+    
+    if data.state == 2:
+        # takes care of the movement of the boat on the screen
+        # calculate dx and dy
+        (dx, dy) = calculateBoatVelocity(data)
+        data.boat.move(dx, dy)
     
     
     #checks if the boat comes in contact with the desired location
     #if data.boat.collision:
         ##TODO: IMPLEMENTATION NEEDED
             
+def calculateBoatVelocity(data):
+    # helper function to determine dx and dy
+    boatAngle = data.boat.angle
+    boatAngle = boatAngle * math.pi // 180
+    r = data.rivers[data.curr]
+    riverAngle = r.getAngle()
+    dy = (data.boat.speed * math.sin(boatAngle)) + (r.speed * math.sin(riverAngle))
+    dx = (data.boat.speed * math.cos(boatAngle)) + (r.speed * math.sin(riverAngle))
+    if (data.boat.cx + dx < data.width and data.boat.cx - dx > 0):
+        if (data.boat.cy - dy > 100):
+            return (dx, dy)
+    return (0, 0)
 
 def redrawAll(canvas, data):
-    canvas.create_rectangle(0, 0, data.width, data.height, fill="gray3")
-    data.background.draw(canvas, data)
-    for r in data.rivers:
-        r.draw(canvas)
-    data.boat.draw(canvas)
+    if data.state == 1:
+        warning = "Game begins in " + str(data.startSeconds) + " seconds"
+        canvas.create_text(data.width//2, data.height//2, text=warning, fill='green',
+                                font=("ComicSansMS" + " 50 " + " bold "))
+        beginnow = "Press s or Space to begin now"
+        canvas.create_text(data.width//2, data.height//2 + 50, text=beginnow,
+                            fill='black', font=("ComicSansMS" + " 30 " + "bold"))
+    
+    if data.state == 2:
+        # game screen
+        canvas.create_rectangle(0, 0, data.width, data.height, fill="gray3")
+        data.background.draw(canvas, data)
+        for r in data.rivers:
+            r.draw(canvas)
+        data.boat.draw(canvas)
     
 
 #################################################################
@@ -177,7 +230,7 @@ def run(width=300, height=300):
 	data = Struct()
 	data.width = width
 	data.height = height
-	data.timerDelay = 100 # milliseconds
+	data.timerDelay = 250 # milliseconds
 	root = Tk()
 	init(data)
 	# create the root and the canvas

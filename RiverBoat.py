@@ -1,5 +1,6 @@
 import random
 import math
+import copy
 
 #### OOP Classes ####
 
@@ -119,17 +120,36 @@ def init(data):
 
     data.boat = Boat(data.width//2, data.height - 10)
     data.background = Background(0, 0)
+    data.cover = PhotoImage(file = 'cover.gif')
     # used to keep track of time
     data.step=0
-    data.startSeconds = 15
+    data.startSeconds = 5
+
     # used to keep track of game state
     # 0: start, 1: channel, 2: game, 3: end
-    data.state=1
+    data.state=0
     # current river
     data.curr=0
 
 def mousePressed(event, data):
-    pass
+    ex, ey = event.x, event.y
+
+    if data.state == 0:
+        if clickPlay(ex, ey, data):
+            data.state += 1
+            data.step = 0
+
+    elif data.state == 1:
+        if clickAnywhere(ex, ey, data):
+            data.state += 1
+
+def clickPlay(ex, ey, data):
+    x0, x1 = 0, data.width
+    y0, y1 = 2*data.height//3, data.height
+    return (x0 <= ex <= x1) and (y0 <= ey <= y1)
+
+def clickAnywhere(ex, ey, data):
+    return (0 <= ex <= data.width) and (0 <= ey <= data.height)
 
 def keyPressed(event, data):
     k = event.keysym
@@ -137,7 +157,7 @@ def keyPressed(event, data):
     if data.state == 1:
         if k == 's':
             data.state += 1
-        elif k == 'Space':
+        elif k == 'space':
             data.state += 1
         elif k == 'q':
             data.state -= 1
@@ -151,6 +171,7 @@ def keyPressed(event, data):
 def timerFired(data):
     data.step+=1
     
+    # display start screen
     if data.state == 1:
         if data.step % 4 == 0:
             data.startSeconds -= 1
@@ -176,20 +197,27 @@ def calculateBoatVelocity(data):
     r = data.rivers[data.curr]
     riverAngle = r.getAngle()
     dy = (data.boat.speed * math.sin(boatAngle)) + (r.speed * math.sin(riverAngle))
-    dx = (data.boat.speed * math.cos(boatAngle)) + (r.speed * math.sin(riverAngle))
+    dx = (data.boat.speed * math.cos(boatAngle)) + (r.speed * math.cos(riverAngle))
     if (data.boat.cx + dx < data.width and data.boat.cx - dx > 0):
         if (data.boat.cy - dy > 100):
             return (dx, dy)
     return (0, 0)
 
 def redrawAll(canvas, data):
+    if data.state == 0:
+        canvas.create_image(data.width//2, data.height//3, image=data.cover)
+        canvas.create_rectangle((0,2*data.height//3), (data.width,data.height),
+                            fill="red")
+        canvas.create_text(data.width//2, 5*data.height//6, text="Play", fill="black",
+                            font=("ComicSansMS" + " 50 " + "bold"))
     if data.state == 1:
         warning = "Game begins in " + str(data.startSeconds) + " seconds"
-        canvas.create_text(data.width//2, data.height//2, text=warning, fill='green',
-                                font=("ComicSansMS" + " 50 " + " bold "))
+        canvas.create_text(data.width//2, data.height//2, text=warning, fill="green",
+                                font=("ComicSansMS" + " 50 " + "bold"))
         beginnow = "Press s or Space to begin now"
         canvas.create_text(data.width//2, data.height//2 + 50, text=beginnow,
-                            fill='black', font=("ComicSansMS" + " 30 " + "bold"))
+                            fill="black", font=("ComicSansMS" + " 30 " + "bold"))
+        data.boat.draw(canvas)
     
     if data.state == 2:
         # game screen

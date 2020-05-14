@@ -11,7 +11,7 @@ import copy
 class River(object):
     # Model
     def __init__(self, cx, cy, length, width, speed, direction):
-        # A river has a position, length, width, speed, and direction
+    	# A river has a position, length, width, speed, and direction
         # Direction is defined as an angle from the positive x-axis
         self.cx = cx
         self.cy = cy
@@ -83,6 +83,10 @@ class Boat(object):
     def move(self, dx, dy):
         self.cx += dx
         self.cy -= dy
+
+    def collision(self, x):
+    	# here x, is a 4-tuple of the coordinates of the object
+    	return (x[0] <= self.cx <= x[1]) and (x[2] <= self.cy <= x[3])
         
         
 
@@ -90,17 +94,26 @@ class Boat(object):
 ##TODO: add more images for background
 class Background(object):
     # Model
-    def __init__(self, cx, cy):
+    def __init__(self, cx, cy, goal):
         self.cx = cx
         self.cy = cy
+        self.gy = goal
     
     # View
     def draw(self, canvas, data):
         canvas.create_rectangle(0, 0, data.width, data.height,
                            fill="green", outline=None)
 
-    def drawGoal(self, canvas, data):
-        return
+    def drawGoal(self, canvas, data, gx):
+    	# draw the goal on canvas
+    	canvas.create_rectangle((gx, self.gy-10), (gx+40, self.gy+10), fill="red")
+    	canvas.create_text(gx + 20, self.gy, text="Goal")
+
+    	
+    def createGoal(self, data):
+    	# randomised goal value
+    	return random.randint(data.width//4, 3*data.width//4)
+
 
 #### Graphics Functions ####
 
@@ -119,12 +132,15 @@ def init(data):
         data.rivers.append(r)
 
     data.boat = Boat(data.width//2, data.height - 10)
-    data.background = Background(0, 0)
+    data.background = Background(0, 0, 90)
+
     data.cover = PhotoImage(file = 'cover.gif')
     # used to keep track of time
     data.step=0
     data.startSeconds = 5
 
+    data.win = False
+    data.loss = False
     # used to keep track of game state
     # 0: start, 1: channel, 2: game, 3: end
     data.state=0
@@ -142,6 +158,8 @@ def mousePressed(event, data):
     elif data.state == 1:
         if clickAnywhere(ex, ey, data):
             data.state += 1
+            data.gx = data.background.createGoal(data)
+
 
 def clickPlay(ex, ey, data):
     x0, x1 = 0, data.width
@@ -151,14 +169,18 @@ def clickPlay(ex, ey, data):
 def clickAnywhere(ex, ey, data):
     return (0 <= ex <= data.width) and (0 <= ey <= data.height)
 
+
+
 def keyPressed(event, data):
     k = event.keysym
 
     if data.state == 1:
         if k == 's':
             data.state += 1
+            data.gx = data.background.createGoal(data)
         elif k == 'space':
             data.state += 1
+            data.gx = data.background.createGoal(data)
         elif k == 'q':
             data.state -= 1
 
@@ -167,6 +189,13 @@ def keyPressed(event, data):
             data.boat.rotate(-10)
         elif k == "Left":
             data.boat.rotate(10)
+        elif k == "r" and (data.win or data.loss):
+        	init(data)
+        	data.state = 2
+        	data.gx = data.background.createGoal(data)
+       	elif k == "q":
+       		data.state = 0
+
 
 def timerFired(data):
     data.step+=1
@@ -177,31 +206,44 @@ def timerFired(data):
             data.startSeconds -= 1
             if data.startSeconds == 0:
                 data.state += 1
+                data.gx = data.background.createGoal(data)
 
-    
     if data.state == 2:
-        # takes care of the movement of the boat on the screen
-        # calculate dx and dy
+		# figure out location of boat and when to change it
+        bcy = data.boat.cy
+		# takes care of the movement of the boat on the screen
+		# calculate dx and dy
         (dx, dy) = calculateBoatVelocity(data)
         data.boat.move(dx, dy)
-    
-    
-    #checks if the boat comes in contact with the desired location
-    #if data.boat.collision:
-        ##TODO: IMPLEMENTATION NEEDED
+        #checks if the boat comes in contact with the goal
+        goalx = (data.gx, data.gx + 40, data.background.gy-10, data.background.gy+10)
+        if data.boat.collision(goalx):
+        	data.win = True
+        elif (data.background.gy+10 > bcy-10):
+        	data.loss = True
+
+        # check which river we are on
+        for i in range(4):
+        	r = data.rivers[i]
+        	rx = (0, data.width, r.cy-r.width//2, r.cy+r.width//2)
+        	if data.boat.collision(rx):
+        		data.curr = i
+        
             
 def calculateBoatVelocity(data):
-    # helper function to determine dx and dy
-    boatAngle = data.boat.angle
-    boatAngle = boatAngle * math.pi // 180
-    r = data.rivers[data.curr]
-    riverAngle = r.getAngle()
-    dy = (data.boat.speed * math.sin(boatAngle)) + (r.speed * math.sin(riverAngle))
-    dx = (data.boat.speed * math.cos(boatAngle)) + (r.speed * math.cos(riverAngle))
-    if (data.boat.cx + dx < data.width and data.boat.cx - dx > 0):
-        if (data.boat.cy - dy > 100):
-            return (dx, dy)
-    return (0, 0)
+	# helper function to determine dx and dy
+	boatAngle = data.boat.angle
+	boatAngle = boatAngle * math.pi // 180
+	r = data.rivers[data.curr]
+	riverAngle = r.getAngle()
+	dy = (data.boat.speed * math.sin(boatAngle)) + (r.speed * math.sin(riverAngle))
+	dx = (data.boat.speed * math.cos(boatAngle)) + (r.speed * math.cos(riverAngle))
+	if (data.boat.cx + dx < data.width and data.boat.cx - dx > 0):
+		if (data.boat.cy - dy > 90):
+			return (dx, dy)
+	return (0, 0)
+
+
 
 def redrawAll(canvas, data):
     if data.state == 0:
@@ -210,6 +252,7 @@ def redrawAll(canvas, data):
                             fill="red")
         canvas.create_text(data.width//2, 5*data.height//6, text="Play", fill="black",
                             font=("ComicSansMS" + " 50 " + "bold"))
+
     if data.state == 1:
         warning = "Game begins in " + str(data.startSeconds) + " seconds"
         canvas.create_text(data.width//2, data.height//2, text=warning, fill="green",
@@ -226,6 +269,10 @@ def redrawAll(canvas, data):
         for r in data.rivers:
             r.draw(canvas)
         data.boat.draw(canvas)
+        data.background.drawGoal(canvas, data, data.gx)
+        if data.win:
+        	canvas.create_text(data.width//2, data.height//10-10, text="You Win!", 
+        					font=("ComicSansMS" + " 30 " + "bold"), fill="firebrick4")
     
 
 #################################################################
